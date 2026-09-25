@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -8,9 +8,9 @@ export default function Layout() {
   const location = useLocation();
 
   // Close sidebar on route change
-  useState(() => {
+  useEffect(() => {
     setSidebarOpen(false);
-  });
+  }, [location.pathname]);
 
   return (
     <div className="flex min-h-screen bg-subtle">
