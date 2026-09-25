@@ -4,13 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 import apiClient from '../apiClient';
 
 interface Member {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  interest: string;
-  dateJoined: string;
+  phoneNumber: string;
+  state: string;
+  country: string;
+  areaOfInterest: string;
+  createdAt: string;
 }
 
 interface PaginatedResponse {
@@ -71,6 +73,7 @@ export default function Registrations() {
                 <th className="px-6 py-4">Last Name</th>
                 <th className="px-6 py-4">Email</th>
                 <th className="px-6 py-4">Phone</th>
+                <th className="px-6 py-4">State / Country</th>
                 <th className="px-6 py-4">Area of Interest</th>
                 <th className="px-6 py-4">Date Joined</th>
               </tr>
@@ -80,17 +83,18 @@ export default function Registrations() {
                 <tr key={row.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4">{row.firstName}</td>
                   <td className="px-6 py-4">{row.lastName}</td>
-                  <td className="px-6 py-4">{row.email}</td>
-                  <td className="px-6 py-4">{row.phone}</td>
+                  <td className="px-6 py-4 text-gray-600">{row.email}</td>
+                  <td className="px-6 py-4 text-gray-600">{row.phoneNumber}</td>
+                  <td className="px-6 py-4 text-gray-600">{row.state}, {row.country}</td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">{row.interest}</span>
+                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">{row.areaOfInterest}</span>
                   </td>
-                  <td className="px-6 py-4 text-gray-500">{new Date(row.dateJoined).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-gray-500">{new Date(row.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
               {result?.data.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-gray-500">No members found.</td>
+                  <td colSpan={7} className="px-6 py-10 text-center text-gray-500">No members found.</td>
                 </tr>
               )}
             </tbody>

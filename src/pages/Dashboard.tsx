@@ -3,11 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import apiClient from '../apiClient';
 
 interface DashboardStats {
-  totalMembers: number;
+  totalRegistered: number;
+  registeredToday: number;
+  registeredThisWeek: number;
+  registeredThisMonth: number;
+  totalPosts: number;
   publishedPosts: number;
-  upcomingEvents: number;
-  unreadMessages: number;
-  recentActivity: Array<{ id: number; description: string; date: string }>;
 }
 
 export default function Dashboard() {
@@ -32,10 +33,10 @@ export default function Dashboard() {
   }
 
   const statCards = [
-    { title: 'Total Members', value: data.totalMembers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { title: 'Published Posts', value: data.publishedPosts, icon: FileText, color: 'text-green-600', bg: 'bg-green-100' },
-    { title: 'Upcoming Events', value: data.upcomingEvents, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-100' },
-    { title: 'Unread Messages', value: data.unreadMessages, icon: Mail, color: 'text-red-600', bg: 'bg-red-100' },
+    { title: 'Total Members',    value: data.totalRegistered,  icon: Users,    color: 'text-blue-600',   bg: 'bg-blue-100' },
+    { title: 'Registered Today', value: data.registeredToday,  icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-100' },
+    { title: 'Total Posts',      value: data.totalPosts,       icon: FileText, color: 'text-green-600',  bg: 'bg-green-100' },
+    { title: 'Published Posts',  value: data.publishedPosts,   icon: Mail,     color: 'text-red-600',    bg: 'bg-red-100' },
   ];
 
   return (
@@ -54,16 +55,23 @@ export default function Dashboard() {
         ))}
       </div>
       
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-semibold mb-4 text-slate-800">Recent Activity</h3>
-        <div className="space-y-4">
-          {data.recentActivity?.map((activity) => (
-            <div key={activity.id} className="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-100">
-              <div className="w-2 h-2 rounded-full bg-accent"></div>
-              <p className="text-sm text-gray-600 flex-1">{activity.description}</p>
-              <span className="text-xs text-gray-400">{new Date(activity.date).toLocaleString()}</span>
-            </div>
-          ))}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <p className="text-sm text-gray-500 font-medium mb-1">Registered This Week</p>
+          <h3 className="text-3xl font-bold text-slate-800">{data.registeredThisWeek}</h3>
+          <p className="text-xs text-green-600 mt-1 font-medium">↑ Past 7 days</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <p className="text-sm text-gray-500 font-medium mb-1">Registered This Month</p>
+          <h3 className="text-3xl font-bold text-slate-800">{data.registeredThisMonth}</h3>
+          <p className="text-xs text-blue-600 mt-1 font-medium">↑ Past 30 days</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <p className="text-sm text-gray-500 font-medium mb-1">Post Publish Rate</p>
+          <h3 className="text-3xl font-bold text-slate-800">
+            {data.totalPosts > 0 ? Math.round((data.publishedPosts / data.totalPosts) * 100) : 0}%
+          </h3>
+          <p className="text-xs text-gray-400 mt-1">{data.publishedPosts} of {data.totalPosts} posts published</p>
         </div>
       </div>
     </div>
