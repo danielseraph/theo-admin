@@ -168,17 +168,17 @@ export default function PostsList() {
     <>
       <div className="space-y-5">
         {/* Header row */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3 flex-wrap flex-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap flex-1">
             {/* Search */}
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-none sm:w-60 min-w-[180px]">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search posts…"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm w-56"
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs sm:text-sm"
               />
             </div>
 
@@ -186,7 +186,7 @@ export default function PostsList() {
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value as PostStatus | ''); setPage(1); }}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="text-xs sm:text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
             >
               <option value="">All Statuses</option>
               <option value="PUBLISHED">Published</option>
@@ -201,10 +201,10 @@ export default function PostsList() {
 
           <button
             onClick={() => navigate('/posts/new')}
-            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm shadow-sm transition-colors"
+            className="bg-primary hover:bg-primary/90 text-white px-4 py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 text-xs sm:text-sm shadow-sm transition-colors whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            New Post
+            <Plus className="w-4 h-4 text-accent" />
+            <span>New Post</span>
           </button>
         </div>
 

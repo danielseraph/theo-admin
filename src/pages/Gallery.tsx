@@ -20,10 +20,8 @@ export default function Gallery() {
   // Upload Form states
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('Community');
-  const [newFile, setNewFile] = useState<File | null>(null);
-  const [newFilePreview, setNewFilePreview] = useState('');
   const [newUrl, setNewUrl] = useState('');
-  const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
+  const [formError, setFormError] = useState('');
 
   // Fetch gallery items
   const { data: apiItems, isLoading } = useQuery({
@@ -58,37 +56,25 @@ export default function Gallery() {
     return matchesSearch && matchesCategory;
   });
 
-  // Handle local file selection
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setNewFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewFilePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      const finalUrl = uploadMode === 'file' ? newFilePreview : newUrl;
-      if (!finalUrl) throw new Error('Please select an image or provide a URL');
+      const finalUrl = newUrl.trim();
+      if (!finalUrl) throw new Error('Please provide an image web URL');
 
-      try {
-        await apiClient.post('/v1/admin/gallery', {
-          title: newTitle || newFile?.name || 'Community Photo',
-          url: finalUrl,
-          mediaUrl: finalUrl,
-          category: newCategory,
-          mediaType: 'IMAGE',
-        });
-      } catch (err) {
-        console.info('Backend admin upload saved locally or synced:', err);
+      if (finalUrl.startsWith('data:')) {
+        throw new Error('Please enter a web URL (https://...). Base64 data files are not supported by the backend.');
       }
-      return { url: finalUrl, title: newTitle, category: newCategory };
+
+      await apiClient.post('/v1/admin/gallery', {
+        title: newTitle.trim() || 'Community Photo',
+        url: finalUrl,
+        mediaUrl: finalUrl,
+        category: newCategory,
+        mediaType: 'IMAGE',
+      });
+
+      return { url: finalUrl, title: newTitle.trim(), category: newCategory };
     },
     onSuccess: (newItem) => {
       queryClient.setQueryData(['galleryItems'], (old: GalleryItem[] | undefined) => [
@@ -106,8 +92,10 @@ export default function Gallery() {
       setIsUploadModalOpen(false);
       resetForm();
     },
-    onError: () => {
-      showToast('Failed to upload media. Please try again.', 'error');
+    onError: (err: any) => {
+      const msg = err?.message || err?.response?.data?.message || 'Failed to upload media. Please try again.';
+      setFormError(msg);
+      showToast(msg, 'error');
     },
   });
 
@@ -136,9 +124,8 @@ export default function Gallery() {
   const resetForm = () => {
     setNewTitle('');
     setNewCategory('Community');
-    setNewFile(null);
-    setNewFilePreview('');
     setNewUrl('');
+    setFormError('');
   };
 
   return (
@@ -276,81 +263,50 @@ export default function Gallery() {
               </button>
             </div>
 
+            {formError && (
+              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs">
+                {formError}
+              </div>
+            )}
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
+                setFormError('');
                 uploadMutation.mutate();
               }}
               className="p-6 space-y-4"
             >
-              {/* Mode Toggle */}
-              <div className="flex border rounded-lg overflow-hidden text-xs font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setUploadMode('file')}
-                  className={`flex-1 py-2 text-center transition-colors ${
-                    uploadMode === 'file' ? 'bg-primary text-white' : 'bg-gray-50 text-gray-600'
-                  }`}
-                >
-                  Upload File
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUploadMode('url')}
-                  className={`flex-1 py-2 text-center transition-colors ${
-                    uploadMode === 'url' ? 'bg-primary text-white' : 'bg-gray-50 text-gray-600'
-                  }`}
-                >
-                  Image URL
-                </button>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Image Web URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/... or https://res.cloudinary.com/..."
+                  value={newUrl}
+                  onChange={(e) => {
+                    setNewUrl(e.target.value);
+                    setFormError('');
+                  }}
+                  required
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Paste any hosted image URL (Cloudinary, AWS S3, Unsplash, etc.)
+                </p>
               </div>
 
-              {/* File / URL Input */}
-              {uploadMode === 'file' ? (
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Select Image File
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-5 text-center hover:border-primary transition-colors bg-gray-50/50">
-                    {newFilePreview ? (
-                      <div className="space-y-2">
-                        <img
-                          src={newFilePreview}
-                          alt="Upload preview"
-                          className="max-h-40 mx-auto rounded-lg object-contain shadow-sm"
-                        />
-                        <p className="text-xs text-green-600 font-medium">{newFile?.name}</p>
-                      </div>
-                    ) : (
-                      <label className="cursor-pointer flex flex-col items-center">
-                        <UploadCloud className="w-8 h-8 text-primary mb-2" />
-                        <span className="text-xs font-semibold text-slate-800">
-                          Click to select a file
-                        </span>
-                        <span className="text-[11px] text-gray-400 mt-0.5">JPG, PNG, WEBP</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileSelect}
-                          className="hidden"
-                          required={!newFilePreview}
-                        />
-                      </label>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Image Direct URL
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://example.com/photo.jpg"
-                    value={newUrl}
-                    onChange={(e) => setNewUrl(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              {newUrl && !newUrl.startsWith('data:') && (
+                <div className="rounded-xl overflow-hidden border border-gray-200 aspect-video bg-gray-50 flex items-center justify-center max-h-40">
+                  <img
+                    src={newUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        'https://placehold.co/600x400?text=Invalid+Image+URL';
+                    }}
                   />
                 </div>
               )}

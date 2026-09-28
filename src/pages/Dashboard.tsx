@@ -40,23 +40,23 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5">
         {statCards.map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
-            <div className={`p-3 rounded-lg ${stat.bg}`}>
+          <div key={i} className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+            <div className={`p-3 rounded-xl ${stat.bg} flex-shrink-0`}>
               <stat.icon className={`w-6 h-6 ${stat.color}`} />
             </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">{stat.title}</p>
-              <h3 className="text-2xl font-bold text-slate-800">{stat.value}</h3>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">{stat.title}</p>
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-800">{stat.value}</h3>
             </div>
           </div>
         ))}
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
           <p className="text-sm text-gray-500 font-medium mb-1">Registered This Week</p>
           <h3 className="text-3xl font-bold text-slate-800">{data.registeredThisWeek}</h3>
           <p className="text-xs text-green-600 mt-1 font-medium">↑ Past 7 days</p>

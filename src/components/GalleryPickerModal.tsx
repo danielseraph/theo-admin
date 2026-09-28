@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  X, Search, Image as ImageIcon, Upload, Check, 
-  Loader2, Plus, Sparkles, AlertCircle 
+  X, Search, Image as ImageIcon, Check, 
+  Loader2, Plus, Sparkles, AlertCircle, Link as LinkIcon, Info
 } from 'lucide-react';
 import apiClient from '../apiClient';
 
@@ -30,17 +30,16 @@ export default function GalleryPickerModal({
   initialSelectedUrl = '',
 }: GalleryPickerModalProps) {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'gallery' | 'upload' | 'url'>('gallery');
+  const [activeTab, setActiveTab] = useState<'gallery' | 'add'>('gallery');
   const [selectedUrl, setSelectedUrl] = useState<string>(initialSelectedUrl);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
-  // Direct upload tab states
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadPreview, setUploadPreview] = useState<string>('');
-  const [uploadTitle, setUploadTitle] = useState('');
-  const [uploadCategory, setUploadCategory] = useState('General');
-  const [directUrl, setDirectUrl] = useState('');
+  // Add new image states
+  const [newTitle, setNewTitle] = useState('');
+  const [newCategory, setNewCategory] = useState('General');
+  const [newUrl, setNewUrl] = useState('');
+  const [formError, setFormError] = useState('');
 
   // Fetch gallery items from backend API
   const { data: apiItems, isLoading } = useQuery({
@@ -60,7 +59,6 @@ export default function GalleryPickerModal({
     staleTime: 1000 * 60 * 5, // 5 mins
   });
 
-  // Pure live items strictly from API
   const allItems: GalleryItem[] = Array.isArray(apiItems) ? apiItems : [];
 
   // Categories list
@@ -78,52 +76,32 @@ export default function GalleryPickerModal({
     return matchesSearch && matchesCat;
   });
 
-  // File selection handler
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setUploadPreview(result);
-        setSelectedUrl(result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Add / Save image mutation
-  const uploadMutation = useMutation({
+  // Add to gallery mutation
+  const addMutation = useMutation({
     mutationFn: async () => {
-      const imageUrl = uploadPreview || directUrl;
-      if (!imageUrl) throw new Error('Please select an image');
+      if (!newUrl.trim()) throw new Error('Please enter an image URL');
 
-      // Attempt to save to backend /v1/admin/gallery if authenticated
-      try {
-        await apiClient.post('/v1/admin/gallery', {
-          title: uploadTitle || uploadFile?.name || 'Uploaded Media',
-          url: imageUrl,
-          mediaUrl: imageUrl,
-          category: uploadCategory,
-          mediaType: 'IMAGE',
-        });
-      } catch (err) {
-        console.info('Backend admin gallery save skipped, using image locally:', err);
+      if (newUrl.startsWith('data:')) {
+        throw new Error('Please enter a web URL (https://...). Base64 data files are not supported by the backend.');
       }
-      return imageUrl;
+
+      await apiClient.post('/v1/admin/gallery', {
+        title: newTitle.trim() || 'Gallery Image',
+        url: newUrl.trim(),
+        mediaUrl: newUrl.trim(),
+        category: newCategory,
+        mediaType: 'IMAGE',
+      });
+
+      return newUrl.trim();
     },
     onSuccess: (url) => {
       queryClient.invalidateQueries({ queryKey: ['galleryItems'] });
       onSelectImage(url);
       onClose();
     },
-    onError: () => {
-      // Still select image even if backend gallery sync had issues
-      if (uploadPreview || directUrl) {
-        onSelectImage(uploadPreview || directUrl);
-        onClose();
-      }
+    onError: (err: any) => {
+      setFormError(err?.message || err?.response?.data?.message || 'Failed to save to gallery');
     },
   });
 
@@ -142,7 +120,7 @@ export default function GalleryPickerModal({
             <div>
               <h3 className="text-lg font-bold text-slate-800">{title}</h3>
               <p className="text-xs text-gray-500">
-                Browse existing media or upload new pictures for your post
+                Choose an image from your organization gallery or add a new photo URL
               </p>
             </div>
           </div>
@@ -172,27 +150,15 @@ export default function GalleryPickerModal({
           </button>
 
           <button
-            onClick={() => setActiveTab('upload')}
+            onClick={() => setActiveTab('add')}
             className={`py-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-2 ${
-              activeTab === 'upload'
-                ? 'border-primary text-primary bg-white'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Upload className="w-4 h-4" />
-            <span>Upload from Device</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('url')}
-            className={`py-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-2 ${
-              activeTab === 'url'
+              activeTab === 'add'
                 ? 'border-primary text-primary bg-white'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
             <Plus className="w-4 h-4" />
-            <span>Direct Web Link</span>
+            <span>Add New Photo</span>
           </button>
         </div>
 
@@ -240,10 +206,17 @@ export default function GalleryPickerModal({
               ) : filteredItems.length === 0 ? (
                 <div className="text-center py-16 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                   <AlertCircle className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-slate-700">No media found</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Try another search term or upload a new photo
+                  <p className="text-sm font-medium text-slate-700">No media found in gallery</p>
+                  <p className="text-xs text-gray-400 mt-1 mb-4">
+                    Add images to your gallery to easily choose them for blog posts
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('add')}
+                    className="px-4 py-2 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-primary/90"
+                  >
+                    Add Image URL
+                  </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
@@ -291,74 +264,67 @@ export default function GalleryPickerModal({
             </div>
           )}
 
-          {/* TAB 2: UPLOAD FROM DEVICE */}
-          {activeTab === 'upload' && (
+          {/* TAB 2: ADD NEW PHOTO */}
+          {activeTab === 'add' && (
             <div className="max-w-xl mx-auto space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Choose Photo File
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-primary transition-colors bg-gray-50/50">
-                  {uploadPreview ? (
-                    <div className="space-y-4">
-                      <img
-                        src={uploadPreview}
-                        alt="Upload preview"
-                        className="max-h-56 mx-auto rounded-xl shadow-md object-contain"
-                      />
-                      <label className="inline-block cursor-pointer px-4 py-2 text-xs font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20">
-                        Choose Another File
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileChange}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center cursor-pointer">
-                      <div className="p-4 rounded-full bg-primary/10 text-primary mb-3">
-                        <Upload className="w-8 h-8" />
-                      </div>
-                      <span className="text-sm font-semibold text-slate-800">
-                        Click to browse or drag and drop image
-                      </span>
-                      <span className="text-xs text-gray-400 mt-1">
-                        PNG, JPG, WEBP, GIF up to 10MB
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
+              {/* Notice */}
+              <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-start space-x-3 text-xs text-blue-800">
+                <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Backend Image Requirement</p>
+                  <p className="mt-0.5 text-blue-700 leading-relaxed">
+                    Your backend API expects hosted image URLs (e.g. from Cloudinary, Imgur, AWS S3, or Unsplash). Paste the link below to save it into your organization gallery.
+                  </p>
                 </div>
               </div>
 
-              {uploadPreview && (
+              {formError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs">
+                  {formError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Image Web URL <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <LinkIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="url"
+                      placeholder="https://images.unsplash.com/... or https://res.cloudinary.com/..."
+                      value={newUrl}
+                      onChange={(e) => {
+                        setNewUrl(e.target.value);
+                        setSelectedUrl(e.target.value);
+                        setFormError('');
+                      }}
+                      className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
                       Title (Optional)
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Outreach Event 2026"
-                      value={uploadTitle}
-                      onChange={(e) => setUploadTitle(e.target.value)}
+                      placeholder="e.g. Community Outreach"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
                       Category
                     </label>
                     <select
-                      value={uploadCategory}
-                      onChange={(e) => setUploadCategory(e.target.value)}
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
                       <option value="Community">Community</option>
@@ -370,45 +336,24 @@ export default function GalleryPickerModal({
                     </select>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* TAB 3: DIRECT WEB LINK */}
-          {activeTab === 'url' && (
-            <div className="max-w-xl mx-auto space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Image Web URL
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://example.com/image.jpg"
-                  value={directUrl}
-                  onChange={(e) => {
-                    setDirectUrl(e.target.value);
-                    setSelectedUrl(e.target.value);
-                  }}
-                  className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Paste any hosted image URL (Unsplash, Cloudinary, AWS S3, etc.)
-                </p>
+                {newUrl && !newUrl.startsWith('data:') && (
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-700">Preview</label>
+                    <div className="rounded-xl overflow-hidden border border-gray-200 aspect-video bg-gray-50 flex items-center justify-center max-h-48">
+                      <img
+                        src={newUrl}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            'https://placehold.co/600x400?text=Invalid+Image+URL';
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {directUrl && (
-                <div className="rounded-xl overflow-hidden border border-gray-200 aspect-video bg-gray-50 flex items-center justify-center">
-                  <img
-                    src={directUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        'https://placehold.co/600x400?text=Invalid+Image+URL';
-                    }}
-                  />
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -416,13 +361,13 @@ export default function GalleryPickerModal({
         {/* Modal Footer */}
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
           <div className="text-xs text-gray-500 truncate max-w-sm">
-            {selectedUrl ? (
+            {selectedUrl && !selectedUrl.startsWith('data:') ? (
               <span className="flex items-center text-slate-700 font-medium">
                 <Check className="w-3.5 h-3.5 text-green-600 mr-1.5" />
-                Image selected
+                Image ready to use
               </span>
             ) : (
-              <span>Click on any image to select it</span>
+              <span>Select an image from the gallery</span>
             )}
           </div>
 
@@ -435,20 +380,20 @@ export default function GalleryPickerModal({
               Cancel
             </button>
 
-            {activeTab === 'upload' && uploadPreview ? (
+            {activeTab === 'add' ? (
               <button
                 type="button"
-                disabled={uploadMutation.isPending}
-                onClick={() => uploadMutation.mutate()}
+                disabled={addMutation.isPending || !newUrl.trim()}
+                onClick={() => addMutation.mutate()}
                 className="px-5 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-lg shadow-sm transition-all flex items-center space-x-2 disabled:opacity-60"
               >
-                {uploadMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-1" />}
-                <span>Use & Add to Gallery</span>
+                {addMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-1" />}
+                <span>Save & Select</span>
               </button>
             ) : (
               <button
                 type="button"
-                disabled={!selectedUrl}
+                disabled={!selectedUrl || selectedUrl.startsWith('data:')}
                 onClick={() => {
                   if (selectedUrl) {
                     onSelectImage(selectedUrl);

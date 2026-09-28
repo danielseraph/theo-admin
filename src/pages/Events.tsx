@@ -77,15 +77,15 @@ export default function Events() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-5 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Events Management</h2>
-          <p className="text-sm text-gray-500">Schedule and monitor community events, workshops, and galas</p>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800">Events Management</h2>
+          <p className="text-xs sm:text-sm text-gray-500">Schedule and monitor community events, workshops, and galas</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-primary hover:bg-primary/90 text-white px-4 py-2.5 rounded-lg font-medium flex items-center space-x-2 transition-colors shadow-sm text-sm"
+          className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors shadow-sm text-xs sm:text-sm whitespace-nowrap w-full sm:w-auto justify-center"
         >
           <Plus className="w-4 h-4 text-accent" />
           <span>Create Event</span>

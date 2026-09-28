@@ -41,10 +41,10 @@ export default function Registrations() {
   });
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-        <div className="relative">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
+      <div className="p-3.5 sm:p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-gray-50/50">
+        <div className="relative w-full sm:w-72">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input 
             type="text" 
             placeholder="Search members..." 
@@ -53,7 +53,7 @@ export default function Registrations() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-64 text-sm"
+            className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-full text-sm"
           />
         </div>
       </div>
@@ -103,23 +103,23 @@ export default function Registrations() {
       </div>
 
       {result && result.pagination && (
-        <div className="p-4 border-t border-gray-100 flex justify-between items-center text-sm text-gray-500">
-          <span>
+        <div className="p-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs sm:text-sm text-gray-500">
+          <span className="text-center sm:text-left">
             Showing page {result.pagination.page} of {result.pagination.totalPages} ({result.pagination.total} total)
           </span>
           <div className="flex space-x-2">
             <button 
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium"
             >
               Prev
             </button>
-            <button className="px-3 py-1 bg-primary text-white rounded">{page}</button>
+            <button className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs sm:text-sm font-semibold">{page}</button>
             <button 
               onClick={() => setPage(p => p + 1)}
               disabled={page >= result.pagination.totalPages}
-              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium"
             >
               Next
             </button>

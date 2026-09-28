@@ -34,7 +34,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-subtle px-4">
+    <div className="min-h-screen flex items-center justify-center bg-subtle px-4 py-8">
       <div className="w-full max-w-md bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
         <div className="bg-primary p-8 text-center">
           <h2 className="text-3xl font-bold text-accent mb-2">Dr Theos</h2>

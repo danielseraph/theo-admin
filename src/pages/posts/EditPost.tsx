@@ -88,7 +88,22 @@ export default function EditPost() {
       <PostForm
         mode="edit"
         defaultValues={defaultValues}
-        onSubmit={(values) => { setApiError(''); mutate(values); }}
+        onSubmit={(values) => {
+          setApiError('');
+          if (values.coverImageUrl?.startsWith('data:')) {
+            const err = 'Cover image cannot be a raw base64 data string. Please provide an image web URL (https://...).';
+            setApiError(err);
+            showToast(err, 'error');
+            return;
+          }
+          if (values.mediaUrl?.startsWith('data:')) {
+            const err = 'Media URL cannot be a raw base64 data string. Please provide an image web URL (https://...).';
+            setApiError(err);
+            showToast(err, 'error');
+            return;
+          }
+          mutate(values);
+        }}
         isSubmitting={isPending}
         apiError={apiError}
       />
